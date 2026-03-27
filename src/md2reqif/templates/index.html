@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>md2reqif — Markdown ↔ ReqIF Converter</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --yellow: #d29922;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+
+        header { padding: 24px; border-bottom: 1px solid var(--border); }
+        header h1 { font-size: 28px; color: var(--accent); }
+        header p { color: var(--text-muted); margin-top: 4px; }
+
+        main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+        .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+        .card h2 { font-size: 18px; margin-bottom: 8px; }
+        .card .description { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+
+        .upload-area { border: 2px dashed var(--border); border-radius: 6px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; position: relative; }
+        .upload-area:hover { border-color: var(--accent); }
+        .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+        .upload-area .upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .upload-area .upload-text { color: var(--text-muted); font-size: 13px; }
+        .upload-area .file-name { color: var(--accent); margin-top: 8px; font-size: 13px; display: none; }
+
+        .btn { display: block; width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.85; }
+        .btn-md { background: var(--accent); color: #0d1117; }
+        .btn-reqif { background: var(--green); color: #0d1117; }
+
+        .flashes { margin-bottom: 24px; }
+        .flash { padding: 12px 16px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+        .flash.error { background: rgba(248, 81, 73, 0.15); border: 1px solid var(--red); color: var(--red); }
+        .flash.success { background: rgba(63, 185, 80, 0.15); border: 1px solid var(--green); color: var(--green); }
+
+        .format-info { margin-top: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+        .format-info h3 { margin-bottom: 12px; }
+        .format-info pre { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 16px; font-size: 12px; overflow-x: auto; line-height: 1.6; color: var(--text-muted); }
+
+        footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 48px; }
+        footer a { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>md2reqif</h1>
+        <p>Convert between Markdown requirements and ReqIF XML format</p>
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flashes">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="cards">
+            <!-- Markdown → ReqIF -->
+            <div class="card" id="md-to-reqif">
+                <h2>📄 Markdown → ReqIF</h2>
+                <p class="description">Upload a Markdown file with structured requirements. Headings become sections, bullet lists become metadata attributes.</p>
+                <form method="post" action="/convert/md-to-reqif" enctype="multipart/form-data" id="form-md">
+                    <div class="upload-area" id="drop-md">
+                        <input type="file" name="file" accept=".md,.markdown" id="file-md" onchange="showFileName(this, 'name-md')">
+                        <div class="upload-icon">📝</div>
+                        <div class="upload-text">Click to select a .md file</div>
+                        <div class="file-name" id="name-md"></div>
+                    </div>
+                    <button type="submit" class="btn btn-md">Convert to ReqIF →</button>
+                </form>
+            </div>
+
+            <!-- ReqIF → Markdown -->
+            <div class="card" id="reqif-to-md">
+                <h2>🔧 ReqIF → Markdown</h2>
+                <p class="description">Upload a ReqIF XML file to convert back to readable Markdown format with all requirements preserved.</p>
+                <form method="post" action="/convert/reqif-to-md" enctype="multipart/form-data" id="form-reqif">
+                    <div class="upload-area" id="drop-reqif">
+                        <input type="file" name="file" accept=".reqif,.xml" id="file-reqif" onchange="showFileName(this, 'name-reqif')">
+                        <div class="upload-icon">⚙️</div>
+                        <div class="upload-text">Click to select a .reqif file</div>
+                        <div class="file-name" id="name-reqif"></div>
+                    </div>
+                    <button type="submit" class="btn btn-reqif">Convert to Markdown →</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="format-info">
+            <h3>Supported Markdown Format</h3>
+            <pre>---
+module: System Requirements
+version: 1.0
+---
+
+# System Requirements
+
+## Authentication
+
+### REQ-001: User login
+- Status: Draft
+- Priority: High
+- Type: Functional
+
+The system SHALL authenticate users with a username and password.</pre>
+        </div>
+    </main>
+
+    <footer>
+        <p>md2reqif &mdash; <a href="https://github.com/garysclaw/md2reqif">GitHub</a> &mdash;
+        <a href="https://pypi.org/project/md2reqif/">PyPI</a></p>
+    </footer>
+
+    <script>
+        function showFileName(input, labelId) {
+            const label = document.getElementById(labelId);
+            if (input.files && input.files[0]) {
+                label.textContent = input.files[0].name;
+                label.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

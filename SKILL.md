@@ -110,6 +110,36 @@ md2reqif validate output.reqif
 md2reqif convert requirements.md | xmllint --format -
 ```
 
+## Web Interface
+
+Start the local web server:
+
+```bash
+uv run md2reqif serve
+# or
+uv run md2reqif serve --port 8080 --debug
+```
+
+Then open http://localhost:5000 in your browser to:
+- Upload a `.md` file → download the converted `.reqif`
+- Upload a `.reqif` file → download the converted `.md`
+
+### UI Tests (Interactive Mode)
+
+```bash
+# Install browsers first
+uv run playwright install chromium
+
+# Run in headed (visible) mode
+uv run pytest tests/test_web_ui.py --headed
+
+# Run with Playwright Inspector (step through)
+PWDEBUG=1 uv run pytest tests/test_web_ui.py --headed
+
+# Run headless (fast)
+uv run pytest tests/test_web_ui.py
+```
+
 ## Writing Tips for AI Agents
 
 1. **Use SHALL language**: Requirements must be normative. Write "The system SHALL..." not "The system should..." or "The system will...".
