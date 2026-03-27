@@ -58,3 +58,14 @@ def validate(input: str) -> None:
     except ET.ParseError as e:
         click.echo(f"✗ XML parse error: {e}", err=True)
         sys.exit(1)
+
+
+@main.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind to")
+@click.option("--port", default=5000, type=int, help="Port to listen on")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+def serve(host: str, port: int, debug: bool) -> None:
+    """Start the web interface."""
+    from md2reqif.web import app
+    click.echo(f"Starting md2reqif web interface at http://{host}:{port}")
+    app.run(host=host, port=port, debug=debug)
